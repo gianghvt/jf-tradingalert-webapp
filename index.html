@@ -97,6 +97,17 @@
       outline: none;
     }
     .tf-row select:focus { border-color: var(--link); }
+    .tf-custom-input {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1.5px solid var(--link);
+      border-radius: 8px;
+      background: var(--sec-bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      min-width: 0;
+    }
     .tf-rm {
       width: 34px;
       height: 38px;
@@ -274,6 +285,9 @@ function addTF(tf = '', signal = 'BUY') {
   const id = ++tfIdSeq;
   tfIds.push(id);
 
+  const CUSTOM_VAL = '__custom__';
+  const isCustom = tf && !TIMEFRAMES.includes(tf);
+
   const row = document.createElement('div');
   row.className = 'tf-row';
   row.id = 'tf-row-' + id;
@@ -283,9 +297,32 @@ function addTF(tf = '', signal = 'BUY') {
   TIMEFRAMES.forEach(t => {
     const o = document.createElement('option');
     o.value = t; o.textContent = t;
-    if (t === tf) o.selected = true;
+    if (!isCustom && t === tf) o.selected = true;
     tfSel.appendChild(o);
   });
+  const customOpt = document.createElement('option');
+  customOpt.value = CUSTOM_VAL;
+  customOpt.textContent = '✏️ Tự nhập...';
+  if (isCustom) customOpt.selected = true;
+  tfSel.appendChild(customOpt);
+
+  const tfInput = document.createElement('input');
+  tfInput.type = 'text';
+  tfInput.id = 'tf-custom-' + id;
+  tfInput.placeholder = 'VD: 3h, 12h, 2D';
+  tfInput.className = 'tf-custom-input';
+  tfInput.style.display = isCustom ? 'block' : 'none';
+  if (isCustom) {
+    tfInput.value = tf;
+    tfSel.style.flex = '0 0 auto';
+  }
+
+  tfSel.onchange = function() {
+    const custom = this.value === CUSTOM_VAL;
+    tfInput.style.display = custom ? 'block' : 'none';
+    tfSel.style.flex = custom ? '0 0 auto' : '1';
+    if (custom) tfInput.focus();
+  };
 
   const sigSel = document.createElement('select');
   sigSel.id = 'tf-sig-' + id;
@@ -306,6 +343,7 @@ function addTF(tf = '', signal = 'BUY') {
   };
 
   row.appendChild(tfSel);
+  row.appendChild(tfInput);
   row.appendChild(sigSel);
   row.appendChild(rm);
   document.getElementById('tf-list').appendChild(row);
@@ -377,10 +415,14 @@ function doSave() {
 
   const timeframes = [];
   tfIds.forEach(id => {
-    const tfEl  = document.getElementById('tf-tf-'  + id);
-    const sigEl = document.getElementById('tf-sig-' + id);
-    if (tfEl && sigEl)
-      timeframes.push({ timeframe: tfEl.value, signal_type: sigEl.value });
+    const tfEl     = document.getElementById('tf-tf-'     + id);
+    const sigEl    = document.getElementById('tf-sig-'    + id);
+    const customEl = document.getElementById('tf-custom-' + id);
+    if (!tfEl || !sigEl) return;
+    const tfVal = tfEl.value === '__custom__'
+      ? (customEl ? customEl.value.trim().toUpperCase() : '')
+      : tfEl.value;
+    if (tfVal) timeframes.push({ timeframe: tfVal, signal_type: sigEl.value });
   });
 
   if (!timeframes.length) { tg.showAlert('⚠️ Chưa thêm timeframe nào!'); return; }
