@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Alert Config</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:       var(--tg-theme-bg-color, #ffffff);
+      --text:     var(--tg-theme-text-color, #000000);
+      --hint:     var(--tg-theme-hint-color, #888888);
+      --link:     var(--tg-theme-link-color, #2481cc);
+      --btn-bg:   var(--tg-theme-button-color, #2481cc);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --sec-bg:   var(--tg-theme-secondary-bg-color, #f1f1f1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px 16px 32px;
+    }
+
+    h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--hint);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 11px 13px;
+      border: 1.5px solid var(--sec-bg);
+      border-radius: 10px;
+      background: var(--sec-bg);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus { border-color: var(--link); }
+    textarea { resize: none; }
+
+    /* Exchange buttons */
+    .exchange-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .ex-btn {
+      padding: 8px 2px;
+      border: 1.5px solid var(--sec-bg);
+      border-radius: 8px;
+      background: var(--sec-bg);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .ex-btn.active {
+      border-color: var(--btn-bg);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+
+    /* TF rows */
+    .tf-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .tf-row select {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1.5px solid var(--sec-bg);
+      border-radius: 8px;
+      background: var(--sec-bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .tf-row select:focus { border-color: var(--link); }
+    .tf-rm {
+      width: 34px;
+      height: 38px;
+      border: none;
+      border-radius: 8px;
+      background: #ff4d4d22;
+      color: #ff4d4d;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .add-tf-btn {
+      width: 100%;
+      padding: 10px;
+      border: 1.5px dashed var(--hint);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--link);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    /* Mode buttons */
+    .mode-row { display: flex; gap: 8px; }
+    .mode-btn {
+      flex: 1;
+      padding: 11px 8px;
+      border: 1.5px solid var(--sec-bg);
+      border-radius: 10px;
+      background: var(--sec-bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .mode-btn.active {
+      border-color: var(--btn-bg);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--sec-bg); margin: 20px 0; }
+
+    /* Save button */
+    .save-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .save-btn:active { opacity: 0.85; }
+
+    #cooldown-group { display: none; }
+  </style>
+</head>
+<body>
+
+<h2 id="form-title">📝 Tạo cảnh báo mới</h2>
+
+<!-- Tên -->
+<div class="form-group">
+  <div class="section-label">Tên cảnh báo</div>
+  <input type="text" id="name" placeholder="VD: BTC Follow Buy H1">
+</div>
+
+<!-- Sàn -->
+<div class="form-group">
+  <div class="section-label">Sàn giao dịch</div>
+  <div class="exchange-grid" id="ex-grid"></div>
+  <input type="text" id="ex-manual" placeholder="Hoặc nhập tay (VD: MEXC)">
+</div>
+
+<!-- Symbol -->
+<div class="form-group">
+  <div class="section-label">Cặp giao dịch (Symbol)</div>
+  <input type="text" id="symbol" placeholder="VD: BTCUSDT, GBPUSD, VN30">
+</div>
+
+<!-- Timeframes -->
+<div class="form-group">
+  <div class="section-label">Timeframes &amp; Tín hiệu RSI</div>
+  <div id="tf-list"></div>
+  <button class="add-tf-btn" onclick="addTF()">➕ Thêm Timeframe</button>
+</div>
+
+<div class="divider"></div>
+
+<!-- Chế độ -->
+<div class="form-group">
+  <div class="section-label">Chế độ cảnh báo</div>
+  <div class="mode-row">
+    <button class="mode-btn active" id="btn-once"   onclick="setMode('ONCE')">🔔 Chỉ 1 lần</button>
+    <button class="mode-btn"        id="btn-repeat" onclick="setMode('REPEAT')">🔁 Lặp lại</button>
+  </div>
+</div>
+
+<!-- Cooldown -->
+<div class="form-group" id="cooldown-group">
+  <div class="section-label">Cooldown (số giờ)</div>
+  <input type="number" id="cooldown" value="4" min="0.5" step="0.5">
+</div>
+
+<!-- Ghi chú -->
+<div class="form-group">
+  <div class="section-label">Ghi chú (tuỳ chọn)</div>
+  <textarea id="notes" rows="2" placeholder="Ghi chú cho cảnh báo này..."></textarea>
+</div>
+
+<button class="save-btn" onclick="doSave()">💾 Lưu cảnh báo</button>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const EXCHANGES  = ['BINANCE','BYBIT','OKX','FXCM','NYSE','NASDAQ','HOSE'];
+const TIMEFRAMES = ['1m','5m','15m','30m','1h','2h','4h','1D','1W'];
+const SIGNALS    = [
+  {v:'BUY',     l:'🟢 Mua'},
+  {v:'SELL',    l:'🔴 Bán'},
+  {v:'NEUTRAL', l:'🟡 Neutral'},
+];
+
+let editId = null;
+let selExchange = '';
+
+// ── Exchange grid ──────────────────────────────
+const grid = document.getElementById('ex-grid');
+EXCHANGES.forEach(ex => {
+  const b = document.createElement('button');
+  b.className = 'ex-btn';
+  b.id = 'ex-' + ex;
+  b.textContent = ex;
+  b.onclick = () => pickExchange(ex);
+  grid.appendChild(b);
+});
+
+function pickExchange(ex) {
+  selExchange = ex;
+  document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('ex-' + ex);
+  if (btn) btn.classList.add('active');
+  document.getElementById('ex-manual').value = '';
+}
+
+document.getElementById('ex-manual').addEventListener('input', function() {
+  const v = this.value.trim().toUpperCase();
+  document.querySelectorAll('.ex-btn').forEach(b => b.classList.remove('active'));
+  selExchange = v;
+});
+
+document.getElementById('symbol').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+
+// ── Timeframe rows ─────────────────────────────
+let tfIdSeq = 0;
+const tfIds = [];
+
+function addTF(tf = '', signal = 'BUY') {
+  const id = ++tfIdSeq;
+  tfIds.push(id);
+
+  const row = document.createElement('div');
+  row.className = 'tf-row';
+  row.id = 'tf-row-' + id;
+
+  const tfSel = document.createElement('select');
+  tfSel.id = 'tf-tf-' + id;
+  TIMEFRAMES.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    if (t === tf) o.selected = true;
+    tfSel.appendChild(o);
+  });
+
+  const sigSel = document.createElement('select');
+  sigSel.id = 'tf-sig-' + id;
+  SIGNALS.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.v; o.textContent = s.l;
+    if (s.v === signal) o.selected = true;
+    sigSel.appendChild(o);
+  });
+
+  const rm = document.createElement('button');
+  rm.className = 'tf-rm';
+  rm.innerHTML = '&times;';
+  rm.onclick = () => {
+    row.remove();
+    const idx = tfIds.indexOf(id);
+    if (idx > -1) tfIds.splice(idx, 1);
+  };
+
+  row.appendChild(tfSel);
+  row.appendChild(sigSel);
+  row.appendChild(rm);
+  document.getElementById('tf-list').appendChild(row);
+}
+
+addTF(); // 1 TF row mặc định
+
+// ── Mode ───────────────────────────────────────
+let curMode = 'ONCE';
+
+function setMode(m) {
+  curMode = m;
+  document.getElementById('btn-once').classList.toggle('active',   m === 'ONCE');
+  document.getElementById('btn-repeat').classList.toggle('active', m === 'REPEAT');
+  document.getElementById('cooldown-group').style.display = m === 'REPEAT' ? 'block' : 'none';
+}
+
+// ── Load edit data từ URL param ?d=... ─────────
+function b64decode(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  return atob(s);
+}
+
+const params = new URLSearchParams(location.search);
+const enc = params.get('d');
+if (enc) {
+  try {
+    const d = JSON.parse(b64decode(enc));
+    editId = d.id || null;
+    document.getElementById('form-title').textContent = `✏️ Sửa cảnh báo #${editId}`;
+    document.getElementById('name').value   = d.name   || '';
+    document.getElementById('symbol').value = d.symbol || '';
+    document.getElementById('notes').value  = d.notes  || '';
+
+    if (d.exchange) {
+      const b = document.getElementById('ex-' + d.exchange);
+      if (b) pickExchange(d.exchange);
+      else {
+        selExchange = d.exchange;
+        document.getElementById('ex-manual').value = d.exchange;
+      }
+    }
+
+    if (d.timeframes && d.timeframes.length) {
+      document.getElementById('tf-list').innerHTML = '';
+      tfIds.length = 0;
+      d.timeframes.forEach(t => addTF(t.timeframe, t.signal_type));
+    }
+
+    if (d.repeat_mode) {
+      setMode(d.repeat_mode);
+      if (d.repeat_mode === 'REPEAT')
+        document.getElementById('cooldown').value = d.cooldown_hours || 4;
+    }
+  } catch (e) { console.error('parse edit data failed', e); }
+}
+
+// ── Save ───────────────────────────────────────
+function doSave() {
+  const name     = document.getElementById('name').value.trim();
+  const symbol   = document.getElementById('symbol').value.trim().toUpperCase();
+  const manualEx = document.getElementById('ex-manual').value.trim().toUpperCase();
+  const exchange = manualEx || selExchange;
+
+  if (!name)     { tg.showAlert('⚠️ Chưa nhập tên cảnh báo!'); return; }
+  if (!exchange) { tg.showAlert('⚠️ Chưa chọn sàn giao dịch!'); return; }
+  if (!symbol)   { tg.showAlert('⚠️ Chưa nhập symbol!'); return; }
+
+  const timeframes = [];
+  tfIds.forEach(id => {
+    const tfEl  = document.getElementById('tf-tf-'  + id);
+    const sigEl = document.getElementById('tf-sig-' + id);
+    if (tfEl && sigEl)
+      timeframes.push({ timeframe: tfEl.value, signal_type: sigEl.value });
+  });
+
+  if (!timeframes.length) { tg.showAlert('⚠️ Chưa thêm timeframe nào!'); return; }
+
+  const payload = {
+    action: editId ? 'update' : 'create',
+    id: editId,
+    name, exchange, symbol, timeframes,
+    repeat_mode: curMode,
+    cooldown_hours: curMode === 'REPEAT'
+      ? (parseFloat(document.getElementById('cooldown').value) || 4)
+      : 0,
+    notes: document.getElementById('notes').value.trim(),
+  };
+
+  tg.sendData(JSON.stringify(payload));
+}
+</script>
+</body>
+</html>
