@@ -224,6 +224,15 @@
   <input type="number" id="cooldown" value="4" min="0.5" step="0.5">
 </div>
 
+<!-- Chế độ kiểm tra -->
+<div class="form-group">
+  <div class="section-label">Chế độ kiểm tra tín hiệu</div>
+  <div class="mode-row">
+    <button class="mode-btn active" id="btn-scan"   onclick="setCheckMode('ON_SCAN')">⏱ Ngay khi quét</button>
+    <button class="mode-btn"        id="btn-candle" onclick="setCheckMode('CANDLE_CLOSE')">🕯 Khi đóng nến</button>
+  </div>
+</div>
+
 <!-- Ghi chú -->
 <div class="form-group">
   <div class="section-label">Ghi chú (tuỳ chọn)</div>
@@ -361,6 +370,15 @@ function setMode(m) {
   document.getElementById('cooldown-group').style.display = m === 'REPEAT' ? 'block' : 'none';
 }
 
+// ── Check mode ─────────────────────────────────
+let curCheckMode = 'ON_SCAN';
+
+function setCheckMode(m) {
+  curCheckMode = m;
+  document.getElementById('btn-scan').classList.toggle('active',   m === 'ON_SCAN');
+  document.getElementById('btn-candle').classList.toggle('active', m === 'CANDLE_CLOSE');
+}
+
 // ── Load edit data từ URL param ?d=... ─────────
 function b64decode(s) {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -399,6 +417,8 @@ if (enc) {
       if (d.repeat_mode === 'REPEAT')
         document.getElementById('cooldown').value = d.cooldown_hours || 4;
     }
+
+    if (d.check_mode) setCheckMode(d.check_mode);
   } catch (e) { console.error('parse edit data failed', e); }
 }
 
@@ -435,6 +455,7 @@ function doSave() {
     cooldown_hours: curMode === 'REPEAT'
       ? (parseFloat(document.getElementById('cooldown').value) || 4)
       : 0,
+    check_mode: curCheckMode,
     notes: document.getElementById('notes').value.trim(),
   };
 
