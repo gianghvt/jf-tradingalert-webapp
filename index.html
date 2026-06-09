@@ -175,6 +175,20 @@
     .save-btn:active { opacity: 0.85; }
 
     #cooldown-group { display: none; }
+
+    .pair-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pair-chip {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--sec-bg);
+      color: var(--text);
+      cursor: pointer;
+      border: 1.5px solid var(--sec-bg);
+      transition: all 0.15s;
+    }
+    .pair-chip:active { opacity: 0.7; }
   </style>
 </head>
 <body>
@@ -198,6 +212,14 @@
 <div class="form-group">
   <div class="section-label">Cặp giao dịch (Symbol)</div>
   <input type="text" id="symbol" placeholder="VD: BTCUSDT, GBPUSD, VN30">
+  <div class="pair-chips">
+    <button class="pair-chip" onclick="pickPair('BTCUSDT')">BTCUSDT</button>
+    <button class="pair-chip" onclick="pickPair('ETHUSDT')">ETHUSDT</button>
+    <button class="pair-chip" onclick="pickPair('EURUSD')">EURUSD</button>
+    <button class="pair-chip" onclick="pickPair('GBPUSD')">GBPUSD</button>
+    <button class="pair-chip" onclick="pickPair('USDJPY')">USDJPY</button>
+    <button class="pair-chip" onclick="pickPair('VN30')">VN30</button>
+  </div>
 </div>
 
 <!-- Timeframes -->
@@ -220,8 +242,8 @@
 
 <!-- Cooldown -->
 <div class="form-group" id="cooldown-group">
-  <div class="section-label">Cooldown (số giờ)</div>
-  <input type="number" id="cooldown" value="4" min="0.5" step="0.5">
+  <div class="section-label">Cooldown (số phút)</div>
+  <input type="number" id="cooldown" value="240" min="1" step="1">
 </div>
 
 <!-- Chế độ kiểm tra -->
@@ -246,7 +268,7 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-const EXCHANGES  = ['BINANCE','BYBIT','OKX','FXCM','NYSE','NASDAQ','HOSE'];
+const EXCHANGES  = ['BINANCE','BYBIT','FXCM','HOSE'];
 const TIMEFRAMES = ['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1D','3D','1W','1M'];
 const SIGNALS    = [
   {v:'BUY',     l:'🟢 Mua'},
@@ -256,6 +278,8 @@ const SIGNALS    = [
 
 let editId = null;
 let selExchange = '';
+
+function pickPair(p) { document.getElementById('symbol').value = p; }
 
 // ── Exchange grid ──────────────────────────────
 const grid = document.getElementById('ex-grid');
@@ -383,7 +407,10 @@ function setCheckMode(m) {
 function b64decode(s) {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
   while (s.length % 4) s += '=';
-  return atob(s);
+  const bin = atob(s);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
 }
 
 const params = new URLSearchParams(location.search);
@@ -415,7 +442,7 @@ if (enc) {
     if (d.repeat_mode) {
       setMode(d.repeat_mode);
       if (d.repeat_mode === 'REPEAT')
-        document.getElementById('cooldown').value = d.cooldown_hours || 4;
+        document.getElementById('cooldown').value = Math.round((d.cooldown_hours || 4) * 60);
     }
 
     if (d.check_mode) setCheckMode(d.check_mode);
@@ -453,7 +480,7 @@ function doSave() {
     name, exchange, symbol, timeframes,
     repeat_mode: curMode,
     cooldown_hours: curMode === 'REPEAT'
-      ? (parseFloat(document.getElementById('cooldown').value) || 4)
+      ? (parseFloat(document.getElementById('cooldown').value) || 240) / 60
       : 0,
     check_mode: curCheckMode,
     notes: document.getElementById('notes').value.trim(),
