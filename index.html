@@ -232,6 +232,21 @@
 
 <div class="divider"></div>
 
+<!-- Điều kiện giá -->
+<div class="form-group">
+  <div class="section-label">Điều kiện giá (tuỳ chọn)</div>
+  <div class="mode-row">
+    <button class="mode-btn active" id="btn-price-none"  onclick="setPriceCond(null)">⛔ Không dùng</button>
+    <button class="mode-btn"        id="btn-price-above" onclick="setPriceCond('ABOVE')">📈 Giá &gt; X</button>
+    <button class="mode-btn"        id="btn-price-below" onclick="setPriceCond('BELOW')">📉 Giá &lt; X</button>
+  </div>
+  <div id="price-target-group">
+    <input type="number" id="price-target" placeholder="Nhập ngưỡng giá (VD: 70000)" min="0" step="any">
+  </div>
+</div>
+
+<div class="divider"></div>
+
 <!-- Chế độ -->
 <div class="form-group">
   <div class="section-label">Chế độ cảnh báo</div>
@@ -253,19 +268,6 @@
   <div class="mode-row">
     <button class="mode-btn active" id="btn-scan"   onclick="setCheckMode('ON_SCAN')">⏱ Ngay khi quét</button>
     <button class="mode-btn"        id="btn-candle" onclick="setCheckMode('CANDLE_CLOSE')">🕯 Khi đóng nến</button>
-  </div>
-</div>
-
-<!-- Điều kiện giá -->
-<div class="form-group">
-  <div class="section-label">Điều kiện giá (tuỳ chọn)</div>
-  <div class="mode-row">
-    <button class="mode-btn active" id="btn-price-none"  onclick="setPriceCond(null)">⛔ Không dùng</button>
-    <button class="mode-btn"        id="btn-price-above" onclick="setPriceCond('ABOVE')">📈 Giá &gt; X</button>
-    <button class="mode-btn"        id="btn-price-below" onclick="setPriceCond('BELOW')">📉 Giá &lt; X</button>
-  </div>
-  <div id="price-target-group">
-    <input type="number" id="price-target" placeholder="Nhập ngưỡng giá (VD: 70000)" min="0" step="any">
   </div>
 </div>
 
@@ -503,7 +505,9 @@ function doSave() {
     if (tfVal) timeframes.push({ timeframe: tfVal, signal_type: sigEl.value });
   });
 
-  if (!timeframes.length) { tg.showAlert('⚠️ Chưa thêm timeframe nào!'); return; }
+  if (!timeframes.length && !curPriceCond) {
+    tg.showAlert('⚠️ Cần cấu hình ít nhất một TF hoặc điều kiện giá!'); return;
+  }
 
   let priceTarget = null;
   if (curPriceCond) {
