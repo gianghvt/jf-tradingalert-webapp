@@ -175,6 +175,7 @@
     .save-btn:active { opacity: 0.85; }
 
     #cooldown-group { display: none; }
+    #price-target-group { display: none; margin-top: 10px; }
 
     .pair-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
     .pair-chip {
@@ -252,6 +253,19 @@
   <div class="mode-row">
     <button class="mode-btn active" id="btn-scan"   onclick="setCheckMode('ON_SCAN')">⏱ Ngay khi quét</button>
     <button class="mode-btn"        id="btn-candle" onclick="setCheckMode('CANDLE_CLOSE')">🕯 Khi đóng nến</button>
+  </div>
+</div>
+
+<!-- Điều kiện giá -->
+<div class="form-group">
+  <div class="section-label">Điều kiện giá (tuỳ chọn)</div>
+  <div class="mode-row">
+    <button class="mode-btn active" id="btn-price-none"  onclick="setPriceCond(null)">⛔ Không dùng</button>
+    <button class="mode-btn"        id="btn-price-above" onclick="setPriceCond('ABOVE')">📈 Giá &gt; X</button>
+    <button class="mode-btn"        id="btn-price-below" onclick="setPriceCond('BELOW')">📉 Giá &lt; X</button>
+  </div>
+  <div id="price-target-group">
+    <input type="number" id="price-target" placeholder="Nhập ngưỡng giá (VD: 70000)" min="0" step="any">
   </div>
 </div>
 
@@ -403,6 +417,18 @@ function setCheckMode(m) {
   document.getElementById('btn-candle').classList.toggle('active', m === 'CANDLE_CLOSE');
 }
 
+// ── Price condition ─────────────────────────────
+let curPriceCond = null;
+
+function setPriceCond(cond) {
+  curPriceCond = cond;
+  document.getElementById('btn-price-none').classList.toggle('active',  cond === null);
+  document.getElementById('btn-price-above').classList.toggle('active', cond === 'ABOVE');
+  document.getElementById('btn-price-below').classList.toggle('active', cond === 'BELOW');
+  document.getElementById('price-target-group').style.display = cond ? 'block' : 'none';
+  if (!cond) document.getElementById('price-target').value = '';
+}
+
 // ── Load edit data từ URL param ?d=... ─────────
 function b64decode(s) {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -446,6 +472,11 @@ if (enc) {
     }
 
     if (d.check_mode) setCheckMode(d.check_mode);
+
+    if (d.price_condition) {
+      setPriceCond(d.price_condition);
+      if (d.price_target != null) document.getElementById('price-target').value = d.price_target;
+    }
   } catch (e) { console.error('parse edit data failed', e); }
 }
 
@@ -474,6 +505,15 @@ function doSave() {
 
   if (!timeframes.length) { tg.showAlert('⚠️ Chưa thêm timeframe nào!'); return; }
 
+  let priceTarget = null;
+  if (curPriceCond) {
+    const rawVal = document.getElementById('price-target').value.trim();
+    priceTarget = parseFloat(rawVal);
+    if (!rawVal || isNaN(priceTarget) || priceTarget <= 0) {
+      tg.showAlert('⚠️ Vui lòng nhập ngưỡng giá hợp lệ!'); return;
+    }
+  }
+
   const payload = {
     action: editId ? 'update' : 'create',
     id: editId,
@@ -483,6 +523,8 @@ function doSave() {
       ? (parseFloat(document.getElementById('cooldown').value) || 240) / 60
       : 0,
     check_mode: curCheckMode,
+    price_condition: curPriceCond,
+    price_target: priceTarget,
     notes: document.getElementById('notes').value.trim(),
   };
 
